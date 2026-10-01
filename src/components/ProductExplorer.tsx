@@ -22,6 +22,21 @@ type LoadState =
   | "error"
   | "ready";
 
+type ProductReview = {
+  rating: number;
+  comment: string;
+  date: string;
+  reviewerName: string;
+  reviewerEmail?: string;
+};
+
+type ProductWithDetails = Product & {
+  description?: string;
+  brand?: string;
+  rating?: number;
+  reviews?: ProductReview[];
+};
+
 export default function ProductExplorer() {
   const [products, setProducts] =
     useState<Product[]>([]);
@@ -85,7 +100,6 @@ export default function ProductExplorer() {
   function saveProduct(
     draft: ProductDraft
   ) {
-    // กรณีแก้ไข
     if (editingProduct) {
       setProducts(
         products.map((product) =>
@@ -102,13 +116,9 @@ export default function ProductExplorer() {
       return;
     }
 
-    // กรณีเพิ่มสินค้า
     const newProduct: Product = {
       id: Date.now(),
-
       ...draft,
-
-      // สินค้าที่เพิ่มใหม่ยังไม่มีรูปจาก API
       thumbnail:
         "https://dummyjson.com/image/150x150",
     };
@@ -130,7 +140,6 @@ export default function ProductExplorer() {
       )
     );
 
-    // ถ้ากำลังแก้สินค้าที่ถูกลบ
     if (
       editingProduct &&
       editingProduct.id === id
@@ -163,12 +172,16 @@ export default function ProductExplorer() {
 
   return (
     <main>
+      {/* =====================
+          Header
+      ===================== */}
+
       <div className="page-header">
         <h1>รายการสินค้า</h1>
 
         <p>
-          จัดการสินค้า ค้นหา เพิ่ม แก้ไข
-          และลบสินค้า
+          ค้นหา ดูรายละเอียด รีวิว
+          และจัดการสินค้า
         </p>
       </div>
 
@@ -179,6 +192,7 @@ export default function ProductExplorer() {
       <section className="card search-card">
         <div className="section-title">
           <h2>ค้นหาสินค้า</h2>
+
           <p>
             ค้นหาสินค้าจากข้อมูล API
           </p>
@@ -218,13 +232,14 @@ export default function ProductExplorer() {
       </section>
 
       {/* =====================
-          Product Table
+          Product Cards
       ===================== */}
 
-      <section className="card">
-        <div className="section-title table-heading">
+      <section className="card product-section">
+        <div className="section-title product-heading">
           <div>
             <h2>รายการสินค้า</h2>
+
             <p>
               พบสินค้า {products.length} รายการ
             </p>
@@ -252,88 +267,182 @@ export default function ProductExplorer() {
 
         {status === "ready" &&
           products.length > 0 && (
-            <div className="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>รูป</th>
-                    <th>ชื่อสินค้า</th>
-                    <th>ราคา</th>
-                    <th>คงเหลือ</th>
-                    <th>หมวดหมู่</th>
-                    <th>จัดการ</th>
-                  </tr>
-                </thead>
+            <div className="product-grid">
+              {products.map((product) => {
+                /*
+                 * DummyJSON มีข้อมูลเพิ่มเติม เช่น
+                 * description, brand, rating และ reviews
+                 */
+                const item =
+                  product as ProductWithDetails;
 
-                <tbody>
-                  {products.map(
-                    (product) => (
-                      <tr key={product.id}>
-                        {/* รูปสินค้า */}
-                        <td>
-                          <img
-                            className="product-image"
-                            src={
-                              product.thumbnail ||
-                              "https://dummyjson.com/image/150x150"
-                            }
-                            alt={product.title}
-                          />
-                        </td>
+                const reviews =
+                  item.reviews || [];
 
-                        {/* ชื่อ */}
-                        <td className="product-name">
-                          {product.title}
-                        </td>
+                return (
+                  <article
+                    className="product-card"
+                    key={product.id}
+                  >
+                    {/* รูปสินค้า */}
+                    <div className="product-image-box">
+                      <img
+                        className="product-card-image"
+                        src={
+                          product.thumbnail ||
+                          "https://dummyjson.com/image/300x220"
+                        }
+                        alt={product.title}
+                      />
+                    </div>
 
-                        {/* ราคา */}
-                        <td>
-                          ${product.price}
-                        </td>
+                    {/* ข้อมูลสินค้า */}
+                    <div className="product-card-body">
+                      <div className="product-top">
+                        <span className="category">
+                          {product.category}
+                        </span>
 
-                        {/* Stock */}
-                        <td>
-                          {product.stock}
-                        </td>
-
-                        {/* Category */}
-                        <td>
-                          <span className="category">
-                            {product.category}
+                        {item.brand && (
+                          <span className="brand">
+                            {item.brand}
                           </span>
-                        </td>
+                        )}
+                      </div>
 
-                        {/* Buttons */}
-                        <td>
-                          <div className="actions">
-                            <button
-                              className="edit-button"
-                              onClick={() =>
-                                editProduct(
-                                  product
-                                )
-                              }
-                            >
-                              แก้ไข
-                            </button>
+                      <h3 className="product-title">
+                        {product.title}
+                      </h3>
 
-                            <button
-                              className="delete-button"
-                              onClick={() =>
-                                removeProduct(
-                                  product.id
+                      {/* ราคา */}
+                      <div className="product-price">
+                        ${product.price.toLocaleString()}
+                      </div>
+
+                      {/* Rating */}
+                      <div className="rating-row">
+                        <span className="stars">
+                          ⭐
+                        </span>
+
+                        <strong>
+                          {item.rating
+                            ? item.rating.toFixed(1)
+                            : "ยังไม่มีคะแนน"}
+                        </strong>
+
+                        <span className="review-count">
+                          (
+                          {reviews.length}
+                          {" "}
+                          รีวิว)
+                        </span>
+                      </div>
+
+                      {/* รายละเอียด */}
+                      <p className="product-description">
+                        {item.description ||
+                          "ไม่มีรายละเอียดสินค้า"}
+                      </p>
+
+                      {/* Stock */}
+                      <div className="stock-row">
+                        <span>
+                          📦 คงเหลือ
+                        </span>
+
+                        <strong>
+                          {product.stock} ชิ้น
+                        </strong>
+                      </div>
+
+                      {/* รีวิว */}
+                      <div className="reviews-section">
+                        <div className="reviews-title">
+                          <span>
+                            ⭐ รีวิวจากลูกค้า
+                          </span>
+
+                          <span>
+                            {reviews.length} รีวิว
+                          </span>
+                        </div>
+
+                        {reviews.length > 0 ? (
+                          <div className="reviews-list">
+                            {reviews
+                              .slice(0, 3)
+                              .map(
+                                (
+                                  review,
+                                  index
+                                ) => (
+                                  <div
+                                    className="review"
+                                    key={`${product.id}-${index}`}
+                                  >
+                                    <div className="review-header">
+                                      <strong>
+                                        {
+                                          review.reviewerName
+                                        }
+                                      </strong>
+
+                                      <span>
+                                        {"⭐".repeat(
+                                          Math.min(
+                                            5,
+                                            Math.max(
+                                              1,
+                                              review.rating
+                                            )
+                                          )
+                                        )}
+                                      </span>
+                                    </div>
+
+                                    <p>
+                                      {
+                                        review.comment
+                                      }
+                                    </p>
+                                  </div>
                                 )
-                              }
-                            >
-                              ลบ
-                            </button>
+                              )}
                           </div>
-                        </td>
-                      </tr>
-                    )
-                  )}
-                </tbody>
-              </table>
+                        ) : (
+                          <p className="no-review">
+                            ยังไม่มีรีวิว
+                          </p>
+                        )}
+                      </div>
+
+                      {/* ปุ่ม */}
+                      <div className="card-actions">
+                        <button
+                          className="edit-button"
+                          onClick={() =>
+                            editProduct(product)
+                          }
+                        >
+                          ✏️ แก้ไข
+                        </button>
+
+                        <button
+                          className="delete-button"
+                          onClick={() =>
+                            removeProduct(
+                              product.id
+                            )
+                          }
+                        >
+                          🗑️ ลบ
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
       </section>
